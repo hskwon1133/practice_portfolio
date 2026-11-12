@@ -56,7 +56,11 @@ def load_table(client: bigquery.Client, project: str, table_name: str, csv_path:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--project", required=True, help="GCP 프로젝트 ID")
-    parser.add_argument("--data-dir", default="../kpi_data", help="CSV 파일이 있는 디렉토리")
+    parser.add_argument(
+        "--data-dir",
+        default=str(Path(__file__).resolve().parents[2] / "kpi_data"),  # 저장소 최상위 kpi_data/
+        help="CSV 파일이 있는 디렉토리",
+    )
     args = parser.parse_args()
 
     client = bigquery.Client(project=args.project)
