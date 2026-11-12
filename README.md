@@ -4,7 +4,7 @@ BigQuery · dbt · Superset으로 매출·마진 KPI와 검색 퍼널 전환율�
 
 > **모든 데이터는 가상(synthetic) 데이터이며 실제 회사 데이터가 아닙니다.**
 
-**현재 상태:** 코드·데이터·설계 문서 작성 완료 / BigQuery 적재, dbt 실행, Superset 대시보드 구축은 아직 실행 전입니다. ([진행 상황](#8-진행-상황) 참고)
+**현재 상태:** BigQuery Sandbox에 raw 데이터 적재와 `dbt build`(모델 7개 + 테스트 23개, 전부 PASS)까지 실행했습니다. Superset 대시보드는 아직 실행 전입니다. ([진행 상황](#8-진행-상황) 참고)
 
 ---
 
@@ -34,7 +34,8 @@ flowchart LR
     E --> F["Superset<br/>대시보드 2종"]
 ```
 
-- BigQuery 리전: `asia-northeast3`(서울). raw 테이블은 날짜 파티션, 서브카테고리(·키워드) 클러스터링.
+- BigQuery 리전: `asia-northeast3`(서울). 운영용 설계(`raw_schema_bigquery.sql`)에서 raw 테이블은 날짜 파티션, 서브카테고리(·키워드) 클러스터링.
+- 실제 실행은 BigQuery Sandbox에서 했고, 파티션을 뺀 `raw_schema_bigquery_sandbox.sql`을 사용했습니다. 이유는 [Sandbox 제약](#bigquery-sandbox-제약) 참고.
 - staging은 view, marts는 table로 생성 (`dbt_project.yml`).
 - 대시보드는 매출/마진 KPI, 검색 퍼널 2종으로 설계 (`superset_portfolio/dashboard_design_spec.md`).
 
@@ -76,16 +77,18 @@ flowchart LR
 | raw | `sales_kpi_daily` | 서브카테고리 × 일자 | 6,576 | 매출·원가·펀딩·비용 원천 |
 | raw | `search_funnel_daily` | 키워드 × 서브카테고리 × 일자 | 65,760 | 퍼널 단계별 건수 |
 | raw | `keyword_dim` | 키워드 | 60 | 키워드 → 서브카테고리·검색량 티어 매핑 |
-| staging | `stg_sales_kpi_daily` | 서브카테고리 × 일자 | — | 컬럼명 정리, 펀딩·비용 NULL → 0, 비정상 행 제외 |
-| staging | `stg_search_funnel_daily` | 키워드 × 서브카테고리 × 일자 | — | 컬럼명 정리, 비정상 행 제외 |
-| staging | `stg_keyword_dim` | 키워드 | — | 컬럼 선택 |
+| staging | `stg_sales_kpi_daily` | 서브카테고리 × 일자 | 6,576 | 컬럼명 정리, 펀딩·비용 NULL → 0, 비정상 행 제외 |
+| staging | `stg_search_funnel_daily` | 키워드 × 서브카테고리 × 일자 | 65,760 | 컬럼명 정리, 비정상 행 제외 |
+| staging | `stg_keyword_dim` | 키워드 | 60 | 컬럼 선택 |
 
-| mart | 그레인 | 답하는 질문 |
-|---|---|---|
-| `mart_sales_margin_daily` | 서브카테고리 × 일자 | 어느 서브카테고리가 어느 날 마진율이 낮았나? |
-| `mart_kpi_monthly_summary` | 서브카테고리 × 월 | 이번 달 GMV·매출·순마진율이 전월·전년 동월 대비 어떻게 변했나? |
-| `mart_search_funnel_daily` | 키워드 × 서브카테고리 × 일자 | 어떤 키워드가 퍼널의 어느 단계에서 이탈이 큰가? |
-| `mart_search_funnel_monthly_trend` | 서브카테고리 × 월 | CTR·장바구니율·CVR이 월별로 개선되고 있나? |
+| mart | 그레인 | 행 수 | 답하는 질문 |
+|---|---|---|---|
+| `mart_sales_margin_daily` | 서브카테고리 × 일자 | 6,576 | 어느 서브카테고리가 어느 날 마진율이 낮았나? |
+| `mart_kpi_monthly_summary` | 서브카테고리 × 월 | 216 | 이번 달 GMV·매출·순마진율이 전월·전년 동월 대비 어떻게 변했나? |
+| `mart_search_funnel_daily` | 키워드 × 서브카테고리 × 일자 | 65,760 | 어떤 키워드가 퍼널의 어느 단계에서 이탈이 큰가? |
+| `mart_search_funnel_monthly_trend` | 서브카테고리 × 월 | 216 | CTR·장바구니율·CVR이 월별로 개선되고 있나? |
+
+행 수는 BigQuery Sandbox에서 `dbt build` 후 조회한 값입니다. staging 필터로 제외된 행은 0건입니다.
 
 ## 5. 지표 정의
 
@@ -128,11 +131,22 @@ staging 모델에서는 테스트와 별도로 다음 행을 걸러냅니다.
 
 - 퍼널 필터는 노출 ≥ 클릭만 검사하고, 클릭 ≥ 상세페이지 ≥ 장바구니 ≥ 구매 순서는 검사하지 않습니다. (현재 CSV에서 역전된 행은 0건입니다.)
 - `_staging__sources.yml`의 freshness 설정은 `dbt test`가 아닌 `dbt source freshness`로 실행되며, 데이터가 2025-12-31에서 끝나기 때문에 실행 시 에러가 납니다.
-- 위 테스트는 아직 실제로 실행하지 않았습니다.
+- `dbt_utils.accepted_range` 테스트 3개는 인자를 `arguments:` 아래에 두지 않아 dbt 1.12에서 deprecation 경고(`MissingArgumentsPropertyInGenericTestDeprecation`)가 나옵니다. 테스트 실행과 결과에는 영향이 없습니다.
 
-## 7. 실행 방법 (미검증)
+**실행 결과** (BigQuery Sandbox, dbt-core 1.12.6 / dbt-bigquery 1.12.3, `dbt build`)
 
-아래 명령어는 저장소의 파일 기준으로 작성했으며, 아직 끝까지 실행해 보지 않았습니다.
+| 구분 | 개수 | 결과 |
+|---|---|---|
+| source 테스트 | 7 | PASS 7 |
+| staging 모델 (view) | 3 | OK 3 |
+| staging 테스트 | 8 | PASS 8 |
+| mart 모델 (table) | 4 | OK 4 |
+| mart 테스트 | 8 | PASS 8 |
+| **합계** | **30** | **PASS=30 WARN=0 ERROR=0 SKIP=0** |
+
+## 7. 실행 방법
+
+1)~3)은 Windows + Python 3.12 가상환경, BigQuery Sandbox에서 실제로 실행해 확인했습니다. 4) Superset은 아직 실행하지 않았습니다.
 
 ```bash
 # 0) 가상 데이터 생성 (CSV는 이미 kpi_data/에 포함되어 있어 생략 가능)
@@ -142,26 +156,40 @@ python ../data_generation/generate_fifo_kpi_v2.py
 python ../data_generation/generate_search_funnel.py
 cd ..
 
-# 1) BigQuery 인증 및 raw 테이블 생성
+# 가상환경 (.venv는 .gitignore로 커밋 제외)
+python -m venv .venv
+.venv\Scripts\activate             # macOS/Linux: source .venv/bin/activate
+pip install dbt-bigquery google-cloud-bigquery
+
+# 1) BigQuery 인증 및 raw 데이터셋·테이블 생성
 gcloud auth application-default login
-#    bq_dbt_portfolio/bigquery/raw_schema_bigquery.sql 을 BigQuery 콘솔에서 실행
+#    Sandbox: bq_dbt_portfolio/bigquery/raw_schema_bigquery_sandbox.sql 실행 (파티션 없음)
+#    결제 계정이 연결된 프로젝트: raw_schema_bigquery.sql 실행 (날짜 파티션)
+bq --project_id=<GCP_PROJECT_ID> query --use_legacy_sql=false < bq_dbt_portfolio/bigquery/raw_schema_bigquery_sandbox.sql
 
 # 2) CSV → BigQuery raw 적재 (기본 경로: 저장소 최상위 kpi_data/)
-pip install google-cloud-bigquery
+#    load job(WRITE_TRUNCATE) 방식이라 DML이 막힌 Sandbox에서도 동작
 python bq_dbt_portfolio/bigquery/load_to_bigquery.py --project <GCP_PROJECT_ID>
+#    확인한 행 수: sales_kpi_daily 6,576 / search_funnel_daily 65,760 / keyword_dim 60
 
 # 3) dbt 변환 + 테스트
-pip install dbt-bigquery
-#    profiles.yml.example 을 ~/.dbt/profiles.yml 로 복사 후 <GCP_PROJECT_ID> 수정
+#    profiles.yml.example 을 저장소 밖 ~/.dbt/profiles.yml 로 복사 후 <GCP_PROJECT_ID> 수정
 cd bq_dbt_portfolio/dbt_portfolio
-dbt deps
-dbt build          # run + test
+dbt deps           # dbt_utils 1.4.1 (package-lock.yml)
+dbt debug
+dbt build          # run + test → 데이터셋 dbt_dev_staging, dbt_dev_marts 생성
 
-# 4) Superset
+# 4) Superset (미실행)
 cd ../../superset_portfolio
 docker compose up -d
 #    이후 SUPERSET_SETUP.md 순서대로 BigQuery 연결, 데이터셋 등록, 차트 구성
 ```
+
+### BigQuery Sandbox 제약
+
+- **테이블은 생성 60일 뒤 자동 삭제됩니다.** Sandbox는 테이블·파티션 기본 만료가 60일로 고정되어 있어, 2026-11-12에 만든 raw·staging·mart 테이블은 모두 **2027-01-11에 만료**됩니다. 다시 보려면 1)~3)을 다시 실행해야 합니다.
+- **날짜 파티션을 쓸 수 없습니다.** 파티션 만료는 파티션 날짜 기준이라 2023~2025년 파티션은 적재 직후 삭제됩니다. 그래서 운영용 DDL(`raw_schema_bigquery.sql`)은 그대로 두고, `PARTITION BY`만 뺀 `raw_schema_bigquery_sandbox.sql`로 실행했습니다. 컬럼·클러스터링은 같습니다.
+- **DML(INSERT/UPDATE/DELETE/MERGE)이 안 됩니다.** raw 적재는 load job, dbt 모델은 `CREATE VIEW`/`CREATE OR REPLACE TABLE`(DDL)이라 영향이 없었습니다. incremental 모델처럼 MERGE가 필요한 구성은 Sandbox에서 실행할 수 없습니다.
 
 ## 8. 진행 상황
 
@@ -173,8 +201,8 @@ docker compose up -d
 | dbt staging·mart 모델 7개, 테스트 23개 | ✅ 작성 완료 |
 | Superset 실행 환경, 대시보드 설계서 | ✅ 작성 완료 |
 | 생성 스크립트 재실행 결과와 저장소 CSV 일치 확인 | ⬜ 미확인 |
-| BigQuery 실제 적재 | ⬜ 실행 전 |
-| `dbt run` / `dbt test` | ⬜ 실행 전 (테스트 통과 여부 미확인) |
+| BigQuery 실제 적재 | ✅ Sandbox에 적재, 행 수 확인 (6,576 / 65,760 / 60) — 2027-01-11 만료 |
+| `dbt build` (run + test) | ✅ 모델 7개 + 테스트 23개, PASS=30 ERROR=0 |
 | Superset 대시보드 구축 | ⬜ 실행 전 (화면 캡처 없음) |
 
 ## 9. AI 활용 안내
@@ -201,11 +229,13 @@ practice_portfolio/
 │   └── keyword_dim.csv
 ├── bq_dbt_portfolio/
 │   ├── bigquery/
-│   │   ├── raw_schema_bigquery.sql       #   raw 데이터셋·테이블 DDL
+│   │   ├── raw_schema_bigquery.sql       #   raw 데이터셋·테이블 DDL (운영용, 날짜 파티션)
+│   │   ├── raw_schema_bigquery_sandbox.sql #  Sandbox 실행용 DDL (파티션 없음)
 │   │   └── load_to_bigquery.py           #   CSV → BigQuery raw 적재
 │   └── dbt_portfolio/
 │       ├── dbt_project.yml
 │       ├── packages.yml                  #   dbt_utils
+│       ├── package-lock.yml              #   dbt deps 결과 (dbt_utils 1.4.1)
 │       ├── profiles.yml.example          #   접속 프로필 예시 (실제 profiles.yml은 커밋 제외)
 │       └── models/
 │           ├── staging/                  #   stg_* 3개 + sources/테스트 정의
