@@ -13,5 +13,4 @@ ba_portfolio:
       dataset: dbt_dev
       location: asia-northeast3
       threads: 4
-      timeout_seconds: 300
       job_execution_timeout_seconds: 300
