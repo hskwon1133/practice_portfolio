@@ -1,4 +1,4 @@
-﻿date,category,category_group,subcategory,gmv,revenue,unitsold,ppp_wo_vat,ad_funding,rebate_funding,review_program_funding,data_insight_funding,gross_category_gp,ad_cost,review_program_cost,data_insight_cost,net_gross_category_gp
+﻿date,category,category_group,subcategory,gmv,revenue,unitsold,unit_price_ex_vat,ad_funding,rebate_funding,review_program_funding,data_insight_funding,gross_category_gp,ad_cost,review_program_cost,data_insight_cost,net_gross_category_gp
 2023-01-01,Grocery,Beverages,Drinks,2011109.0,1948775.0,1991,1010.1,37171.0,10161.0,10629.0,6820.0,653590.0,14630.0,4896.0,2426.0,696419.0
 2023-01-01,Grocery,Beverages,Water,1941230.0,1883732.0,3005,646.0,18484.0,28005.0,9244.0,2356.0,835828.0,6217.0,5407.0,742.0,881551.0
 2023-01-01,Grocery,Meal & Healthy,Healthy Food,3326272.0,3234255.0,640,5197.3,36221.0,35506.0,6729.0,6385.0,1219484.0,14885.0,2774.0,2878.0,1283788.0

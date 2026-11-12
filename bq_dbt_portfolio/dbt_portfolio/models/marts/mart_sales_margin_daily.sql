@@ -18,7 +18,7 @@ final as (
         gmv,
         revenue,
         unitsold,
-        ppp_wo_vat,
+        unit_price_ex_vat,
 
         -- funding/cost 합계
         (ad_funding + rebate_funding + review_program_funding + data_insight_funding)   as total_funding,

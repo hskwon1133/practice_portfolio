@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS `raw.sales_kpi_daily` (
   gmv                         NUMERIC     NOT NULL,
   revenue                     NUMERIC     NOT NULL,
   unitsold                    INT64       NOT NULL,
-  ppp_wo_vat                  NUMERIC     NOT NULL,
+  unit_price_ex_vat           NUMERIC     NOT NULL,
   ad_funding                  NUMERIC,
   rebate_funding              NUMERIC,
   review_program_funding      NUMERIC,

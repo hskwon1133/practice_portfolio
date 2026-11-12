@@ -18,7 +18,7 @@ cleaned as (
         gmv,
         revenue,
         unitsold,
-        ppp_wo_vat,
+        unit_price_ex_vat,
         coalesce(ad_funding, 0)                         as ad_funding,
         coalesce(rebate_funding, 0)                     as rebate_funding,
         coalesce(review_program_funding, 0)             as review_program_funding,

@@ -23,7 +23,7 @@ RNG = np.random.default_rng(42)
 
 DATES = pd.date_range("2023-01-01", "2025-12-31", freq="D")
 
-# 서브카테고리별 키워드 10개 + 검색량 티어 + 평균 단가(ppp 유사치)
+# 서브카테고리별 키워드 10개 + 검색량 티어 + 평균 판매 단가
 KEYWORDS = {
     "Drinks": {
         "tier": "High",

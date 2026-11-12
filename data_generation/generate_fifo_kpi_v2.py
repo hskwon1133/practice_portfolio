@@ -91,8 +91,8 @@ def simulate_subcat(group: str, subcat: str, p: dict) -> pd.DataFrame:
             cogs += to_consume * unit_cost_level  # 재고 부족 시 최신 단가로 보충
 
         # --- 판매가 & GMV / Revenue ---
-        ppp_wo_vat = round(unit_cost_level * p["markup"] * rng.uniform(0.98, 1.02), 1)
-        gmv = round(unitsold * ppp_wo_vat, 0)
+        unit_price_ex_vat = round(unit_cost_level * p["markup"] * rng.uniform(0.98, 1.02), 1)
+        gmv = round(unitsold * unit_price_ex_vat, 0)
         revenue = round(gmv * rng.uniform(0.96, 0.99), 0)
 
         # --- Funding / Cost ---
@@ -121,7 +121,7 @@ def simulate_subcat(group: str, subcat: str, p: dict) -> pd.DataFrame:
             gmv=gmv,
             revenue=revenue,
             unitsold=unitsold,
-            ppp_wo_vat=ppp_wo_vat,
+            unit_price_ex_vat=unit_price_ex_vat,
             ad_funding=ad_funding,
             rebate_funding=rebate_funding,
             review_program_funding=review_program_funding,
