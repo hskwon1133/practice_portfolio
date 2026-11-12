@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: stg_sales_kpi_daily
+    description: 서브카테고리 x 일자 매출/마진 KPI staging 모델
+    columns:
+      - name: order_date
+        tests: [not_null]
+      - name: subcategory
+        tests: [not_null]
+      - name: revenue
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+
+  - name: stg_search_funnel_daily
+    description: 키워드 x 서브카테고리 x 일자 검색 Funnel staging 모델
+    columns:
+      - name: event_date
+        tests: [not_null]
+      - name: keyword
+        tests: [not_null]
+
+  - name: stg_keyword_dim
+    description: 키워드 디멘션 staging 모델
+    columns:
+      - name: keyword
+        tests: [not_null, unique]

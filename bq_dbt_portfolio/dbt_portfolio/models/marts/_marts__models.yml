@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: mart_sales_margin_daily
+    description: >
+      서브카테고리 x 일자 매출/마진 분석 마트. gross/net margin %을 계산해
+      Superset 대시보드의 매출/마진 추이 차트 소스로 사용.
+    columns:
+      - name: order_date
+        tests: [not_null]
+      - name: net_margin_pct
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: -100
+              max_value: 100
+
+  - name: mart_kpi_monthly_summary
+    description: >
+      서브카테고리 x 월 핵심 KPI 거버넌스 마트. GMV/매출의 MoM·YoY 성장률을 포함.
+      월간 KPI 리포팅에서 지표 정의를 통일하기 위한 기준 테이블.
+    columns:
+      - name: month_start
+        tests: [not_null]
+      - name: subcategory
+        tests: [not_null]
+
+  - name: mart_search_funnel_daily
+    description: 키워드 x 서브카테고리 x 일자 검색 Funnel 전환율(CTR/ATC율/CVR) 마트
+    columns:
+      - name: event_date
+        tests: [not_null]
+      - name: ctr_pct
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+
+  - name: mart_search_funnel_monthly_trend
+    description: >
+      서브카테고리 x 월 검색 Funnel 전환율 추세 마트. SDP 개선 스토리라인
+      (연도별 CTR/ATC율/CVR 개선)을 보여주는 대시보드 핵심 소스.
+    columns:
+      - name: month_start
+        tests: [not_null]
+      - name: subcategory
+        tests: [not_null]

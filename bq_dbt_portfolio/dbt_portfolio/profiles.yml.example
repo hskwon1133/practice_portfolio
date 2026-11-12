@@ -1,0 +1,17 @@
+# profiles.yml.example
+# ~/.dbt/profiles.yml 에 아래 내용을 <GCP_PROJECT_ID>만 채워서 저장하세요.
+# BigQuery Sandbox 무료 티어는 서비스 계정 키 없이 oauth 방식으로도 인증 가능합니다
+# (사전에 `gcloud auth application-default login` 실행 필요)
+
+ba_portfolio:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: <GCP_PROJECT_ID>
+      dataset: dbt_dev
+      location: asia-northeast3
+      threads: 4
+      timeout_seconds: 300
+      job_execution_timeout_seconds: 300

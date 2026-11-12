@@ -1,0 +1,42 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('DBT_GCP_PROJECT', target.project) }}"
+    schema: raw
+    tables:
+      - name: sales_kpi_daily
+        description: >
+          서브카테고리 x 일자 그레인의 매출/마진 KPI 원천 테이블.
+          FIFO 원가 시뮬레이션 기반 synthetic 데이터(2023-01-01 ~ 2025-12-31).
+        loaded_at_field: date
+        freshness:
+          warn_after: {count: 2, period: day}
+          error_after: {count: 5, period: day}
+        columns:
+          - name: date
+            tests: [not_null]
+          - name: subcategory
+            tests: [not_null]
+          - name: revenue
+            tests: [not_null]
+
+      - name: search_funnel_daily
+        description: >
+          키워드 x 서브카테고리 x 일자 그레인의 검색 Funnel 원천 테이블.
+          SDP 개선 스토리라인 반영 synthetic 데이터.
+        loaded_at_field: date
+        freshness:
+          warn_after: {count: 2, period: day}
+          error_after: {count: 5, period: day}
+        columns:
+          - name: date
+            tests: [not_null]
+          - name: keyword
+            tests: [not_null]
+
+      - name: keyword_dim
+        description: 키워드 -> 서브카테고리/검색량 티어 매핑 디멘션 테이블
+        columns:
+          - name: keyword
+            tests: [not_null, unique]

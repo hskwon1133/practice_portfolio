@@ -1,0 +1,41 @@
+# docker-compose.yml
+# Superset 로컬 실행용 (공식 이미지 기반, 포트폴리오 데모용 최소 구성)
+# 실행: docker compose up -d
+# 접속: http://localhost:8088  (최초 계정 생성은 아래 SUPERSET_SETUP.md 참고)
+
+version: "3.8"
+
+services:
+  superset-db:
+    image: postgres:16
+    container_name: superset_meta_db
+    environment:
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset_pw
+      POSTGRES_DB: superset
+    volumes:
+      - superset_db_data:/var/lib/postgresql/data
+
+  superset:
+    image: apache/superset:latest
+    container_name: superset_app
+    depends_on:
+      - superset-db
+    ports:
+      - "8088:8088"
+    environment:
+      SUPERSET_SECRET_KEY: "change_this_to_a_random_secret"
+      DATABASE_DIALECT: postgresql
+      DATABASE_HOST: superset-db
+      DATABASE_PORT: 5432
+      DATABASE_DB: superset
+      DATABASE_USER: superset
+      DATABASE_PASSWORD: superset_pw
+    volumes:
+      - superset_home:/app/superset_home
+      # BigQuery 서비스 계정 키를 쓸 경우 아래 주석 해제 후 경로 맞추기
+      # - ./bigquery_service_account.json:/app/bigquery_service_account.json:ro
+
+volumes:
+  superset_db_data:
+  superset_home:
